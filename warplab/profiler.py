@@ -31,6 +31,39 @@ class BottleneckInference:
         except (ValueError, TypeError):
             return "Inconclusive"
 
+    def diagnose(self) -> Dict[str, str]:
+        bottleneck = self.classify()
+        if bottleneck == "Memory-bound (DRAM)":
+            return {
+                "diagnosis": bottleneck,
+                "explanation": "Your kernel spends over 70% of its time waiting for data from main memory. It's starved for data.",
+                "suggestions": "1. Ensure memory accesses are coalesced. 2. Load frequently used data into Shared Memory (__shared__)."
+            }
+        elif bottleneck == "Memory-bound (L1/TEX)":
+            return {
+                "diagnosis": bottleneck,
+                "explanation": "The kernel is hitting the L1 cache or Texture cache heavily.",
+                "suggestions": "1. Consider changing access patterns to be more cache-friendly. 2. If using read-only data, ensure it's loaded efficiently."
+            }
+        elif bottleneck == "Compute-bound (SM)":
+            return {
+                "diagnosis": bottleneck,
+                "explanation": "Your GPU's compute units (Streaming Multiprocessors) are saturated. The kernel is doing a lot of math.",
+                "suggestions": "1. Profile instruction mix (e.g., FMA operations). 2. Minimize divergent branches. 3. Consider loop unrolling."
+            }
+        elif bottleneck == "Latency-bound or Low-Occupancy":
+            return {
+                "diagnosis": bottleneck,
+                "explanation": "Neither memory nor compute is saturated. The GPU might not have enough work per block, or is waiting on long-latency instructions.",
+                "suggestions": "1. Increase block size or grid size to improve occupancy. 2. Check for register pressure limiting active warps."
+            }
+        else:
+            return {
+                "diagnosis": bottleneck,
+                "explanation": "The profiler metrics do not strongly suggest a single primary bottleneck.",
+                "suggestions": "Check nsys/ncu directly for more detailed timeline or metric analysis."
+            }
+
 def run_profiler(bin_path: Path, run_cmd: str, kernel_name: str = "") -> Dict[str, Any]:
     ncu_cmd = f"ncu --csv --metrics bus__throughput.pct,sm__throughput.pct,l1tex__t_throughput.pct,lts__t_throughput.pct,dram__throughput.pct {run_cmd}"
     

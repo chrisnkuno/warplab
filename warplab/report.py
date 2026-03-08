@@ -9,7 +9,7 @@ def generate_markdown_report(
     fingerprint: Dict[str, Any],
     baseline: Dict[str, Any], 
     best: Dict[str, Any], 
-    bottleneck: str,
+    bottleneck_diagnosis: Dict[str, str],
     reports_dir: Path
 ):
     report_content = f"""# WarpLab Report — {project_name}
@@ -38,12 +38,12 @@ def generate_markdown_report(
 ## Stability Stats
 - CV: {best.get('cv', 0) * 100:.2f}%
 
-## Inference
-- **Bottleneck suspected**: {bottleneck}
-- (WarpLab detected this bottleneck via measured hardware counters and rule-based inference)
+## Virtual Mentor Diagnosis
+- **Bottleneck suspected**: {bottleneck_diagnosis.get('diagnosis')}
+- **Explanation**: {bottleneck_diagnosis.get('explanation')}
 
 ## Recommended Next Actions
-- [ ] Investigate {bottleneck.lower()} related code segments.
+{bottleneck_diagnosis.get('suggestions')}
 - [ ] Apply local refinement around the best configuration.
 - [ ] Store results as priors for future runs on {fingerprint.get('gpu_name')}.
 """

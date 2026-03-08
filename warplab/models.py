@@ -2,22 +2,11 @@ from pydantic import BaseModel, Field
 from typing import Dict, List, Optional, Any
 
 class CandidateConfig(BaseModel):
-    block_size: int = 256
-    unroll: int = 1
-    vector_width: int = 1
-    use_shared: bool = False
-    
-    # Allow for additional dynamic parameters
-    extra: Dict[str, Any] = Field(default_factory=dict)
+    params: Dict[str, Any] = Field(default_factory=dict)
 
     def to_compile_flags(self) -> str:
-        flags = [
-            f"-DBLOCK_SIZE={self.block_size}",
-            f"-DUNROLL={self.unroll}",
-            f"-DVECTOR_WIDTH={self.vector_width}",
-            f"-DUSE_SHARED={1 if self.use_shared else 0}"
-        ]
-        for k, v in self.extra.items():
+        flags = []
+        for k, v in self.params.items():
             if isinstance(v, bool):
                 flags.append(f"-D{k.upper()}={1 if v else 0}")
             else:
