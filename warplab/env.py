@@ -2,6 +2,7 @@ import subprocess
 import platform
 import socket
 import os
+import sys
 from datetime import datetime
 from typing import Dict, Any
 
@@ -13,6 +14,14 @@ def get_env_fingerprint() -> Dict[str, Any]:
         "os_release": platform.release(),
         "python_version": platform.python_version(),
     }
+    
+    # Environment detection
+    if 'google.colab' in sys.modules:
+        fingerprint["environment"] = "Google Colab"
+    elif os.path.exists('/kaggle/working'):
+        fingerprint["environment"] = "Kaggle"
+    else:
+        fingerprint["environment"] = "Local/Other"
     
     # GPU info via nvidia-smi if available
     try:
