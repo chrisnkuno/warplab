@@ -112,13 +112,19 @@ class CoreTests(unittest.TestCase):
             self.assertTrue(summary_path.exists())
 
     def test_cloud_runtime_helpers(self):
-        from warplab.cloud import collect_runtime_diagnostics, notebook_bootstrap_snippet, runtime_warnings
+        from warplab.cloud import (
+            collect_runtime_diagnostics,
+            notebook_bootstrap_snippet,
+            runtime_warnings,
+            validation_cell_snippet,
+        )
 
         diagnostics = collect_runtime_diagnostics()
         self.assertIn("environment", diagnostics)
         self.assertIn("tools", diagnostics)
         self.assertIsInstance(runtime_warnings(diagnostics), list)
         self.assertIn("uv sync --dev", notebook_bootstrap_snippet())
+        self.assertIn("collect_runtime_diagnostics", validation_cell_snippet())
 
 
 if __name__ == "__main__":

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 import sys
 from pathlib import Path
@@ -42,6 +43,38 @@ def notebook_bootstrap_snippet() -> str:
             "!uv sync --dev",
         ]
     )
+
+
+def validation_cell_snippet(repo_dir: str = "warplab") -> str:
+    return "\n".join(
+        [
+            "import json, subprocess, sys",
+            "from pathlib import Path",
+            "",
+            f"ROOT_DIR = Path('{repo_dir}').resolve()",
+            "if not ROOT_DIR.exists():",
+            "    raise FileNotFoundError(f'Repo directory not found: {ROOT_DIR}')",
+            "",
+            "subprocess.run([sys.executable, '-m', 'pip', 'install', 'uv'], check=True)",
+            "subprocess.run(['uv', 'sync', '--dev'], cwd=ROOT_DIR, check=True)",
+            "",
+            "from warplab.cloud import collect_runtime_diagnostics, runtime_warnings",
+            "",
+            "diagnostics = collect_runtime_diagnostics()",
+            "warnings = runtime_warnings(diagnostics)",
+            "print(json.dumps(diagnostics, indent=2))",
+            "if warnings:",
+            "    print('\\nWarnings:')",
+            "    for warning in warnings:",
+            "        print('-', warning)",
+        ]
+    )
+
+
+def format_runtime_report(diagnostics: dict[str, object]) -> str:
+    warnings = runtime_warnings(diagnostics)
+    payload = {"diagnostics": diagnostics, "warnings": warnings}
+    return json.dumps(payload, indent=2)
 
 
 def runtime_warnings(diagnostics: dict[str, object]) -> list[str]:

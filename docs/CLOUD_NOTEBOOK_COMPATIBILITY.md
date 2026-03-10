@@ -41,6 +41,15 @@ Equivalent commands:
 !uv sync --dev
 ```
 
+## Single Validation Cell
+
+Use this when you want one notebook cell that both syncs the repo and prints runtime diagnostics:
+
+```python
+from warplab.cloud import validation_cell_snippet
+print(validation_cell_snippet("warplab"))
+```
+
 ## Runtime Checks
 
 Use:
@@ -58,6 +67,17 @@ This helps answer:
 - am I actually on a GPU-visible runtime?
 - is `nvcc` available?
 - is `ncu` available?
+
+## Outside Colab And Kaggle
+
+The same runtime-check path can be used in:
+
+- local JupyterLab
+- VS Code notebooks
+- JupyterHub
+- Docker-hosted Jupyter
+- remote SSH or port-forwarded Jupyter sessions
+- local shell via `uv run warplab doctor`
 
 ## What Still Needs Human Validation
 

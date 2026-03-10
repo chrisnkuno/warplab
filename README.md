@@ -86,6 +86,12 @@ Use a hosted notebook environment when you want the lowest-friction entry point 
 
 Use `uv run jupyter lab` or `uv run warplab ...` when you want the same workflow on your own machine.
 
+For a quick runtime check outside notebooks:
+
+```bash
+uv run warplab doctor
+```
+
 ### 3. Containerized local or remote GPU
 
 Use the `Dockerfile` when you want the same repo in a reproducible environment on a local GPU host or remote GPU provider.
