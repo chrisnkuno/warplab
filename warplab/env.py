@@ -49,4 +49,19 @@ def get_env_fingerprint() -> Dict[str, Any]:
     except (subprocess.CalledProcessError, FileNotFoundError):
         fingerprint["cuda_version"] = "Unknown"
 
+    try:
+        fingerprint["git_commit"] = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], encoding="utf-8", stderr=subprocess.DEVNULL
+        ).strip()
+        fingerprint["git_dirty"] = bool(
+            subprocess.check_output(
+                ["git", "status", "--porcelain"],
+                encoding="utf-8",
+                stderr=subprocess.DEVNULL,
+            ).strip()
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        fingerprint["git_commit"] = "Unknown"
+        fingerprint["git_dirty"] = False
+
     return fingerprint

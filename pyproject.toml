@@ -18,6 +18,9 @@ dependencies = [
     "notebook"
 ]
 
+[project.scripts]
+warplab = "warplab.__main__:main"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
@@ -25,3 +28,8 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["warplab*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

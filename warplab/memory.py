@@ -2,8 +2,8 @@ import sqlite3
 import json
 import uuid
 from pathlib import Path
-from typing import Dict, Any, List, Optional
 from datetime import datetime
+from typing import Any
 
 class Memory:
     def __init__(self, db_path: Path):
@@ -74,21 +74,44 @@ class Memory:
           path TEXT NOT NULL,
           FOREIGN KEY(candidate_id) REFERENCES candidates(id)
         )""")
+
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_candidates_run_id ON candidates(run_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_priors_signature_gpu ON priors(kernel_signature, gpu_name)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_profiles_candidate_id ON profiles(candidate_id)")
         
         conn.commit()
         conn.close()
 
-    def insert_run(self, run_id: str, project_name: str, fingerprint: Dict[str, Any], objective: Dict[str, str]):
+    def insert_run(self, run_id: str, project_name: str, fingerprint: dict[str, Any], objective: dict[str, str]):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO runs (id, project_name, created_at, status, gpu_name, compute_capability, cuda_version, driver_version, objective_metric, objective_direction) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (run_id, project_name, fingerprint["timestamp"], "running", fingerprint["gpu_name"], fingerprint["compute_capability"], fingerprint["cuda_version"], fingerprint["driver_version"], objective["metric"], objective["direction"])
+            "INSERT INTO runs (id, project_name, created_at, status, gpu_name, compute_capability, cuda_version, driver_version, git_commit, objective_metric, objective_direction) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                run_id,
+                project_name,
+                fingerprint["timestamp"],
+                "running",
+                fingerprint["gpu_name"],
+                fingerprint["compute_capability"],
+                fingerprint["cuda_version"],
+                fingerprint["driver_version"],
+                fingerprint.get("git_commit"),
+                objective["metric"],
+                objective["direction"],
+            )
         )
         conn.commit()
         conn.close()
 
-    def insert_candidate(self, candidate_id: str, run_id: str, config_json: str, metrics: Dict[str, Any]):
+    def finalize_run(self, run_id: str, status: str):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("UPDATE runs SET status = ? WHERE id = ?", (status, run_id))
+        conn.commit()
+        conn.close()
+
+    def insert_candidate(self, candidate_id: str, run_id: str, config_json: str, metrics: dict[str, Any]):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(
@@ -100,7 +123,27 @@ class Memory:
         conn.commit()
         conn.close()
 
-    def get_priors(self, kernel_signature: str, gpu_name: str) -> List[Dict[str, Any]]:
+    def insert_profile(self, candidate_id: str, metric_json: str, bottleneck_class: str | None = None):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO profiles (id, candidate_id, metric_json, bottleneck_class) VALUES (?, ?, ?, ?)",
+            (str(uuid.uuid4())[:8], candidate_id, metric_json, bottleneck_class),
+        )
+        conn.commit()
+        conn.close()
+
+    def insert_artifact(self, candidate_id: str, artifact_type: str, path: str):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO artifacts (id, candidate_id, artifact_type, path) VALUES (?, ?, ?, ?)",
+            (str(uuid.uuid4())[:8], candidate_id, artifact_type, path),
+        )
+        conn.commit()
+        conn.close()
+
+    def get_priors(self, kernel_signature: str, gpu_name: str) -> list[dict[str, Any]]:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
         cursor.execute(

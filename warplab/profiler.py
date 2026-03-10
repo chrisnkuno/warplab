@@ -1,11 +1,13 @@
-import subprocess
+from pathlib import Path
+from typing import Any
+
 import csv
 import io
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+
+from .execution import render_command, run_command
 
 class BottleneckInference:
-    def __init__(self, metrics: Dict[str, Any]):
+    def __init__(self, metrics: dict[str, Any]):
         self.metrics = metrics
         
     def classify(self) -> str:
@@ -31,7 +33,7 @@ class BottleneckInference:
         except (ValueError, TypeError):
             return "Inconclusive"
 
-    def diagnose(self) -> Dict[str, str]:
+    def diagnose(self) -> dict[str, str]:
         bottleneck = self.classify()
         if bottleneck == "Memory-bound (DRAM)":
             return {
@@ -64,40 +66,49 @@ class BottleneckInference:
                 "suggestions": "Check nsys/ncu directly for more detailed timeline or metric analysis."
             }
 
-def run_profiler(bin_path: Path, run_cmd: str, kernel_name: str = "") -> Dict[str, Any]:
-    ncu_cmd = f"ncu --csv --metrics bus__throughput.pct,sm__throughput.pct,l1tex__t_throughput.pct,lts__t_throughput.pct,dram__throughput.pct {run_cmd}"
-    
-    try:
-        process = subprocess.run(
-            ncu_cmd,
-            shell=True,
-            cwd=bin_path.parent.parent,
-            capture_output=True,
-            text=True
-        )
-        
-        if process.returncode != 0:
-            return {"error": process.stderr}
-            
-        metrics = {}
-        # Parse NCU CSV
-        lines = process.stdout.strip().splitlines()
-        found_header = False
-        header = []
-        for line in lines:
-            if "Metric Name" in line and "Metric Value" in line:
-                found_header = True
-                continue
-            if found_header:
-                parts = line.split(",")
-                if len(parts) >= 2:
-                    # Very simple parsing, NCU CSV can be complex
-                    # Values are often quoted: "sm__throughput.pct","%","75.2"
-                    # We just need the name and value
-                    name = parts[0].strip('"')
-                    val = parts[-1].strip('"')
-                    metrics[name] = val
-                    
-        return metrics
-    except Exception as e:
-        return {"error": str(e)}
+def run_profiler(
+    bin_path: Path,
+    run_cmd: str,
+    kernel_name: str = "",
+    cwd: Path | None = None,
+    timeout_s: int | None = 300,
+    extra_context: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    context = {"artifact": str(bin_path)}
+    if extra_context:
+        context.update(extra_context)
+
+    rendered_run_cmd = render_command(run_cmd, **context)
+    ncu_cmd = (
+        "ncu --csv --metrics "
+        "bus__throughput.pct,sm__throughput.pct,l1tex__t_throughput.pct,"
+        "lts__t_throughput.pct,dram__throughput.pct "
+        f"{rendered_run_cmd}"
+    )
+    execution = run_command(ncu_cmd, cwd=cwd or bin_path.parent, timeout_s=timeout_s)
+    if not execution.success:
+        return {"error": execution.stderr, "command": execution.command}
+
+    reader = csv.DictReader(io.StringIO(execution.stdout))
+    metrics: dict[str, Any] = {}
+    for row in reader:
+        metric_name = row.get("Metric Name") or row.get("Metric Name Base")
+        if not metric_name:
+            continue
+
+        row_kernel_name = row.get("Kernel Name") or row.get("Kernel Name Base") or ""
+        if kernel_name and row_kernel_name and kernel_name not in row_kernel_name:
+            continue
+
+        metric_value = row.get("Metric Value")
+        if metric_value is not None:
+            metrics[metric_name] = metric_value
+
+    if not metrics:
+        return {
+            "error": "No profiler metrics parsed from Nsight Compute output",
+            "command": execution.command,
+            "stdout": execution.stdout,
+        }
+
+    return metrics

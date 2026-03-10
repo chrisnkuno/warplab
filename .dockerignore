@@ -1,0 +1,10 @@
+.git
+.venv
+__pycache__
+*.pyc
+runs
+reports
+db
+.pytest_cache
+.mypy_cache
+.ipynb_checkpoints

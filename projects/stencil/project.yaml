@@ -1,6 +1,6 @@
 version: 1
-name: saxpy
-description: "SAXPY benchmark for WarpLab"
+name: stencil
+description: "1D stencil benchmark for WarpLab"
 
 build:
   compile_kernel: >
@@ -13,8 +13,8 @@ run:
   validate: "{artifact} --size {size} --atol {atol} --rtol {rtol}"
 
 input:
-  size: 10000000
-  repeats: 50
+  size: 16777216
+  repeats: 40
 
 objective:
   metric: latency_ms
@@ -22,18 +22,17 @@ objective:
 
 search_space:
   block_size: [64, 128, 256, 512]
-  unroll: [1, 2, 4, 8]
-  vector_width: [1, 2, 4]
+  unroll: [1, 2, 4]
+  use_shared: [true, false]
 
 constraints:
-  - "vector_width <= 4"
   - "block_size % 32 == 0"
 
 validation:
-  atol: 1e-6
+  atol: 1e-5
   rtol: 1e-5
 
 budget:
-  max_experiments: 100
+  max_experiments: 80
   warmup_runs: 5
   timed_runs: 20

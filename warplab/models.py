@@ -1,5 +1,6 @@
+from typing import Any, Dict, List
+
 from pydantic import BaseModel, Field
-from typing import Dict, List, Optional, Any
 
 class CandidateConfig(BaseModel):
     params: Dict[str, Any] = Field(default_factory=dict)
@@ -14,6 +15,7 @@ class CandidateConfig(BaseModel):
         return " ".join(flags)
 
 class ProjectConfig(BaseModel):
+    version: int = 1
     name: str
     description: str
     build: Dict[str, str]

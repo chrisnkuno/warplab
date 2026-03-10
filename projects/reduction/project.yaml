@@ -1,6 +1,6 @@
 version: 1
-name: saxpy
-description: "SAXPY benchmark for WarpLab"
+name: reduction
+description: "Block-level float reduction benchmark for WarpLab"
 
 build:
   compile_kernel: >
@@ -13,27 +13,28 @@ run:
   validate: "{artifact} --size {size} --atol {atol} --rtol {rtol}"
 
 input:
-  size: 10000000
-  repeats: 50
+  size: 16777216
+  repeats: 40
 
 objective:
   metric: latency_ms
   direction: minimize
 
 search_space:
-  block_size: [64, 128, 256, 512]
-  unroll: [1, 2, 4, 8]
-  vector_width: [1, 2, 4]
+  block_size: [128, 256, 512]
+  items_per_thread: [1, 2, 4, 8]
+  unroll: [1, 2, 4]
 
 constraints:
-  - "vector_width <= 4"
   - "block_size % 32 == 0"
+  - "items_per_thread >= 1"
+  - "items_per_thread <= 8"
 
 validation:
-  atol: 1e-6
-  rtol: 1e-5
+  atol: 1e-4
+  rtol: 1e-4
 
 budget:
-  max_experiments: 100
+  max_experiments: 80
   warmup_runs: 5
   timed_runs: 20
