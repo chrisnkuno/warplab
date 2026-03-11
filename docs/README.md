@@ -17,6 +17,8 @@ Start here:
 - `docs/PROJECT_SPEC.md`: `project.yaml` contract, placeholders, and executable output requirements
 - `docs/OPEN_SOURCE_GAPS_AND_NEXT_STEPS.md`: what is still missing for the notebook-first open-source vision
 - `docs/REPO_ASSESSMENT_AND_COMPLETION_GUIDE.md`: repo gaps, roadmap, and completion checklist
+- `docs/RELEASE_CHECKLIST.md`: pre-publish verification list for maintainers
+- `docs/RELEASE_POST_DRAFT.md`: draft launch announcement / release post
 - `CONTRIBUTING.md`: contributor workflow, testing, and expectations
 
 If you are new to the repo, read these in order:

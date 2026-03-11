@@ -26,7 +26,7 @@ WarpLab now includes:
 - a notebook template for interactive CUDA experimentation
 - a container path for local or remote GPU execution
 
-WarpLab is still early-stage. The main sample projects are `projects/saxpy`, `projects/reduction`, and `projects/stencil`.
+WarpLab should currently be treated as an early open beta. The Kaggle runtime and CUDA toolchain path are verified, while the packaged sample-project optimization flow is still beta. The main sample projects are `projects/saxpy`, `projects/reduction`, and `projects/stencil`.
 
 ## Requirements
 
