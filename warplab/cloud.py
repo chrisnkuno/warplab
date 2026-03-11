@@ -34,29 +34,46 @@ def collect_runtime_diagnostics() -> dict[str, object]:
     }
 
 
-def notebook_bootstrap_snippet() -> str:
+def notebook_bootstrap_snippet(repo_url: str = "<your-warplab-fork-or-repo-url>", repo_dir: str = "warplab") -> str:
     return "\n".join(
         [
-            "!git clone <your-warplab-fork-or-repo-url>",
-            "%cd warplab",
+            f"!git clone {repo_url} {repo_dir}",
+            f"%cd {repo_dir}",
             "%pip install uv",
             "!uv sync --dev",
         ]
     )
 
 
-def validation_cell_snippet(repo_dir: str = "warplab") -> str:
-    return "\n".join(
+def validation_cell_snippet(repo_dir: str = "warplab", repo_url: str | None = None) -> str:
+    lines = [
+        "import json, subprocess, sys",
+        "from pathlib import Path",
+        "",
+        f"ROOT_DIR = Path('{repo_dir}').resolve()",
+    ]
+    if repo_url:
+        lines.extend(
+            [
+                "if not ROOT_DIR.exists():",
+                f"    subprocess.run(['git', 'clone', '--depth', '1', '{repo_url}', '{repo_dir}'], check=True)",
+                f"    ROOT_DIR = Path('{repo_dir}').resolve()",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "if not ROOT_DIR.exists():",
+                "    raise FileNotFoundError(f'Repo directory not found: {ROOT_DIR}')",
+            ]
+        )
+    lines.extend(
         [
-            "import json, subprocess, sys",
-            "from pathlib import Path",
-            "",
-            f"ROOT_DIR = Path('{repo_dir}').resolve()",
-            "if not ROOT_DIR.exists():",
-            "    raise FileNotFoundError(f'Repo directory not found: {ROOT_DIR}')",
             "",
             "subprocess.run([sys.executable, '-m', 'pip', 'install', 'uv'], check=True)",
             "subprocess.run(['uv', 'sync', '--dev'], cwd=ROOT_DIR, check=True)",
+            "if str(ROOT_DIR) not in sys.path:",
+            "    sys.path.insert(0, str(ROOT_DIR))",
             "",
             "from warplab.cloud import collect_runtime_diagnostics, runtime_warnings",
             "",
@@ -69,6 +86,7 @@ def validation_cell_snippet(repo_dir: str = "warplab") -> str:
             "        print('-', warning)",
         ]
     )
+    return "\n".join(lines)
 
 
 def format_runtime_report(diagnostics: dict[str, object]) -> str:

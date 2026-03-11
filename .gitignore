@@ -151,3 +151,4 @@ build/
 *.out
 *.log
 notes.md
+.env

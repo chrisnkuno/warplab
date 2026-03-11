@@ -31,5 +31,6 @@ include = ["warplab*"]
 
 [dependency-groups]
 dev = [
+    "kaggle>=2.0.0",
     "pytest>=9.0.2",
 ]

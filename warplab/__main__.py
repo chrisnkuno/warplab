@@ -6,6 +6,8 @@ import sys
 from pathlib import Path
 
 from .cloud import collect_runtime_diagnostics, format_runtime_report
+from .kaggle_api import format_kaggle_doctor_report, kaggle_doctor
+from .kaggle_kernel import write_kaggle_kernel_package
 from .runner import run_project
 
 
@@ -14,6 +16,38 @@ def main() -> int:
     if argv and argv[0] == "doctor":
         diagnostics = collect_runtime_diagnostics()
         print(format_runtime_report(diagnostics))
+        return 0
+    if argv and argv[0] == "kaggle-doctor":
+        report = kaggle_doctor(Path.cwd())
+        print(format_kaggle_doctor_report(report))
+        return 0
+    if argv and argv[0] == "kaggle-package":
+        parser = argparse.ArgumentParser(description="Create a Kaggle kernel package for WarpLab validation.")
+        parser.add_argument("--output-dir", default="build/kaggle-validation")
+        parser.add_argument("--username", default=None)
+        parser.add_argument("--title", default="WarpLab Kaggle Runtime Validation")
+        parser.add_argument("--slug", default=None)
+        parser.add_argument("--repo-dir", default="warplab")
+        parser.add_argument("--repo-url", default=None)
+        parser.add_argument("--public", action="store_true")
+        args = parser.parse_args(argv[1:])
+
+        from .kaggle_api import kaggle_credentials
+
+        username = args.username or kaggle_credentials(Path.cwd()).get("username")
+        if not username:
+            raise SystemExit("KAGGLE_USERNAME is required for kaggle-package.")
+
+        path = write_kaggle_kernel_package(
+            Path(args.output_dir),
+            username=username,
+            title=args.title,
+            slug=args.slug,
+            repo_dir=args.repo_dir,
+            repo_url=args.repo_url,
+            is_private=not args.public,
+        )
+        print(json.dumps({"package_dir": str(path.resolve())}, indent=2))
         return 0
 
     parser = argparse.ArgumentParser(description="Run a WarpLab optimization workflow.")

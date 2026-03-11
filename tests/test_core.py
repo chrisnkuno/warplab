@@ -1,3 +1,4 @@
+import json
 import unittest
 import tempfile
 from pathlib import Path
@@ -124,7 +125,47 @@ class CoreTests(unittest.TestCase):
         self.assertIn("tools", diagnostics)
         self.assertIsInstance(runtime_warnings(diagnostics), list)
         self.assertIn("uv sync --dev", notebook_bootstrap_snippet())
+        self.assertIn("git clone", notebook_bootstrap_snippet("https://github.com/example/repo.git"))
         self.assertIn("collect_runtime_diagnostics", validation_cell_snippet())
+        self.assertIn("sys.path.insert(0, str(ROOT_DIR))", validation_cell_snippet())
+        self.assertIn(
+            "git', 'clone', '--depth', '1', 'https://github.com/example/repo.git'",
+            validation_cell_snippet(repo_url="https://github.com/example/repo.git"),
+        )
+
+    def test_kaggle_env_loading(self):
+        from warplab.kaggle_api import load_dotenv
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            env_path = Path(tmp_dir) / ".env"
+            env_path.write_text("KAGGLE_API_TOKEN=test-token\nKAGGLE_USERNAME=test-user\nKAGGLE_KEY=test-key\n")
+            values = load_dotenv(env_path)
+            self.assertEqual(values["KAGGLE_API_TOKEN"], "test-token")
+            self.assertEqual(values["KAGGLE_USERNAME"], "test-user")
+            self.assertEqual(values["KAGGLE_KEY"], "test-key")
+
+    def test_kaggle_kernel_package_generation(self):
+        from warplab.kaggle_kernel import (
+            discover_repo_url,
+            kaggle_kernel_metadata,
+            write_kaggle_kernel_package,
+        )
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            package_dir = write_kaggle_kernel_package(Path(tmp_dir), username="user123", slug="warp-test")
+            metadata = json.loads((package_dir / "kernel-metadata.json").read_text())
+            notebook = json.loads((package_dir / "warp-test.ipynb").read_text())
+            self.assertEqual(metadata["id"], "user123/warp-test")
+            self.assertTrue(metadata["enable_gpu"])
+            self.assertEqual(metadata["kernel_type"], "notebook")
+            self.assertTrue((package_dir / "warp-test.ipynb").exists())
+            self.assertTrue((package_dir / "warplab" / "pyproject.toml").exists())
+            self.assertTrue((package_dir / "warplab" / "warplab" / "__main__.py").exists())
+            self.assertIn("git', 'clone', '--depth', '1'", "".join(notebook["cells"][1]["source"]))
+
+        metadata = kaggle_kernel_metadata("user123", "warp-test", "Warp Test", "warp-test.ipynb")
+        self.assertEqual(metadata["code_file"], "warp-test.ipynb")
+        self.assertTrue(discover_repo_url())
 
 
 if __name__ == "__main__":
