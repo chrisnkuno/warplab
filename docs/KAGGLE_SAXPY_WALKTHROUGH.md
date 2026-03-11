@@ -1,6 +1,6 @@
 # Kaggle SAXPY Walkthrough
 
-This is the first fully validated browser-runtime path for WarpLab.
+This is the first packaged WarpLab sample-project workflow for Kaggle.
 
 As of March 11, 2026, Kaggle was verified to provide:
 
@@ -8,6 +8,9 @@ As of March 11, 2026, Kaggle was verified to provide:
 - `nvcc` at `/usr/local/cuda/bin/nvcc`
 - `ncu` at `/usr/local/cuda/bin/ncu`
 - `nvidia-smi` at `/opt/bin/nvidia-smi`
+
+That verification covers the runtime and CUDA toolchain.
+The full `saxpy` optimization path should still be treated as beta until repeated end-to-end runs are stable.
 
 ## Goal
 
@@ -19,9 +22,15 @@ Run the full WarpLab loop for `projects/saxpy` from a Kaggle notebook:
 4. benchmark and search candidates
 5. inspect the generated summary, report, and plots
 
+Before running this walkthrough, complete:
+
+- `docs/KAGGLE_SETUP.md`
+
 ## Build The Kaggle Package
 
 From the repo root:
+
+Smoke-test first:
 
 ```bash
 uv run warplab kaggle-project-package \
@@ -29,8 +38,11 @@ uv run warplab kaggle-project-package \
   --output-dir build/kaggle-saxpy \
   --title "WarpLab SAXPY Kaggle Run" \
   --slug warplab-saxpy-kaggle-run \
-  --candidate-count 8
+  --candidate-count 2 \
+  --no-profile
 ```
+
+Then increase the search budget once the base path is stable.
 
 This creates a Kaggle notebook package with:
 
@@ -47,13 +59,13 @@ set -a && . ./.env && set +a && UV_CACHE_DIR=/tmp/uv-cache uv run kaggle kernels
 ## Check Status
 
 ```bash
-set -a && . ./.env && set +a && UV_CACHE_DIR=/tmp/uv-cache uv run kaggle kernels status ckagabe/warplab-saxpy-kaggle-run
+UV_CACHE_DIR=/tmp/uv-cache uv run kaggle kernels status <your-kaggle-username>/warplab-saxpy-kaggle-run
 ```
 
 ## Download Output
 
 ```bash
-set -a && . ./.env && set +a && UV_CACHE_DIR=/tmp/uv-cache uv run kaggle kernels output ckagabe/warplab-saxpy-kaggle-run -p build/kaggle-saxpy-output
+UV_CACHE_DIR=/tmp/uv-cache uv run kaggle kernels output <your-kaggle-username>/warplab-saxpy-kaggle-run -p build/kaggle-saxpy-output
 ```
 
 ## What To Look For
@@ -68,6 +80,7 @@ Successful output should include:
 
 ## Notes
 
-- `--candidate-count 8` is a reasonable first Kaggle run. Increase it once the base path is stable.
+- start with `--candidate-count 2 --no-profile` for the first smoke test
+- increase the candidate count only after the smoke test succeeds
 - Keep profiling enabled if `ncu` is present. Use `--no-profile` only when startup time matters more than diagnostics.
 - Kaggle logs can repeat package-install output because the hosted execution stack mirrors notebook cell streams into multiple output channels.

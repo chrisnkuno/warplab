@@ -34,13 +34,11 @@ def run_benchmark(
 ) -> BenchmarkResult:
     latencies = []
 
-    context = {
-        "artifact": str(bin_path),
-        "warmups": warmup_runs,
-        "repeats": timed_runs,
-    }
+    context = {"artifact": str(bin_path)}
     if extra_context:
         context.update(extra_context)
+    context["warmups"] = warmup_runs
+    context["repeats"] = timed_runs
 
     command = render_command(run_cmd, **context)
     execution = run_command(command, cwd=cwd or bin_path.parent, timeout_s=timeout_s)

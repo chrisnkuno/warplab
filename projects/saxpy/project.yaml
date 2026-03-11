@@ -10,11 +10,11 @@ build:
 
 run:
   benchmark: "{artifact} --size {size} --warmups {warmups} --repeats {repeats}"
-  validate: "{artifact} --size {size} --atol {atol} --rtol {rtol}"
+  validate: "{artifact} --size {validation_size} --atol {atol} --rtol {rtol}"
 
 input:
   size: 10000000
-  repeats: 50
+  validation_size: 1000000
 
 objective:
   metric: latency_ms

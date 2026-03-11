@@ -57,22 +57,31 @@ WarpLab is still early-stage. The main sample projects are `projects/saxpy`, `pr
 
 ## Getting Started
 
-1. Install dependencies: `pip install -e .`
+1. Sync the environment:
+
+```bash
+uv sync --dev
+```
+
 2. Run the CLI:
 
 ```bash
-warplab projects/saxpy --root-dir .
+uv run warplab run projects/saxpy --root-dir .
 ```
 
 3. Or open `notebooks/warplab_v1.ipynb` in JupyterLab and run the wrapper cells.
 4. Review the generated report in `reports/` and the run artifacts in `runs/`.
 
-Recommended `uv` workflow:
+Notebook workflow:
 
 ```bash
-uv sync --dev
 uv run jupyter lab
 ```
+
+For local secrets and hosted notebook helpers:
+
+- copy `.env.example` to `.env` if you want WarpLab to read a Kaggle token from the repo root
+- see `docs/KAGGLE_SETUP.md` for the public Kaggle onboarding path
 
 ## Open-Source Usage Modes
 
@@ -84,7 +93,7 @@ Use a hosted notebook environment when you want the lowest-friction entry point 
 
 ### 2. Local notebook or CLI
 
-Use `uv run jupyter lab` or `uv run warplab ...` when you want the same workflow on your own machine.
+Use `uv run jupyter lab` or `uv run warplab run ...` when you want the same workflow on your own machine.
 
 For a quick runtime check outside notebooks:
 
@@ -121,6 +130,7 @@ The current command templates support placeholders such as:
 - [`docs/NOTEBOOK_FIRST_ACCESSIBILITY.md`](docs/NOTEBOOK_FIRST_ACCESSIBILITY.md)
 - [`docs/NOTEBOOK_QUICKSTART.md`](docs/NOTEBOOK_QUICKSTART.md)
 - [`docs/CLOUD_NOTEBOOK_COMPATIBILITY.md`](docs/CLOUD_NOTEBOOK_COMPATIBILITY.md)
+- [`docs/KAGGLE_SETUP.md`](docs/KAGGLE_SETUP.md)
 - [`docs/KAGGLE_SAXPY_WALKTHROUGH.md`](docs/KAGGLE_SAXPY_WALKTHROUGH.md)
 - [`docs/DOCKER_AND_REMOTE_GPU.md`](docs/DOCKER_AND_REMOTE_GPU.md)
 - [`docs/PROJECT_SPEC.md`](docs/PROJECT_SPEC.md)

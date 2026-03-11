@@ -71,6 +71,7 @@ uv run warplab kaggle-project-package \
 
 Then push it with the Kaggle CLI. See:
 
+- `docs/KAGGLE_SETUP.md`
 - `docs/KAGGLE_SAXPY_WALKTHROUGH.md`
 
 ## What The Notebook Covers
@@ -104,5 +105,5 @@ Use the CLI or Python API when:
 Equivalent CLI pattern:
 
 ```bash
-uv run warplab projects/saxpy --root-dir .
+uv run warplab run projects/saxpy --root-dir .
 ```

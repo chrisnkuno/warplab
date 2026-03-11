@@ -70,7 +70,8 @@ def run_project(
     baseline_validate = run_root / "baseline" / "validate"
 
     compile_context = dict(config.input)
-    run_context = {**config.input, **config.validation}
+    validation_context = {**config.input, **config.validation}
+    benchmark_context = dict(config.input)
 
     try:
         baseline_bench_compile = compile_kernel(
@@ -96,7 +97,7 @@ def run_project(
             baseline_validate,
             config.run["validate"],
             cwd=project_path,
-            extra_context=run_context,
+            extra_context=validation_context,
         )
         if not baseline_validation.valid:
             raise RuntimeError(f"Baseline validation failed: {baseline_validation.raw_output}")
@@ -107,7 +108,7 @@ def run_project(
             warmup_runs=config.budget["warmup_runs"],
             timed_runs=config.budget["timed_runs"],
             cwd=project_path,
-            extra_context=run_context,
+            extra_context=benchmark_context,
         )
         baseline_latency = baseline_benchmark.median_ms
 
@@ -123,7 +124,7 @@ def run_project(
                 baseline_bench,
                 config.run["benchmark"],
                 cwd=project_path,
-                extra_context={**run_context, "warmups": 1, "repeats": 1},
+                extra_context={**benchmark_context, "warmups": 1, "repeats": 1},
             )
             if "error" not in baseline_profile:
                 baseline_diagnosis = BottleneckInference(baseline_profile).diagnose()
@@ -196,7 +197,7 @@ def run_project(
                     candidate_validate,
                     config.run["validate"],
                     cwd=project_path,
-                    extra_context=run_context,
+                    extra_context=validation_context,
                 )
                 metrics["validate_success"] = validation.valid
                 metrics["stage_details"]["validate"] = {
@@ -215,7 +216,7 @@ def run_project(
                             warmup_runs=config.budget["warmup_runs"],
                             timed_runs=config.budget["timed_runs"],
                             cwd=project_path,
-                            extra_context=run_context,
+                            extra_context=benchmark_context,
                         )
                         metrics["benchmark_success"] = True
                         metrics["latency_ms"] = benchmark.median_ms
@@ -239,14 +240,12 @@ def run_project(
             memory.insert_artifact(candidate_id, "bench_binary", str(candidate_bench))
             memory.insert_artifact(candidate_id, "validate_binary", str(candidate_validate))
 
-            results.append(
-                {
-                    **metrics,
-                    "id": candidate_id,
-                    "config": candidate.model_dump(),
-                    "flags": flags,
-                }
-            )
+            return {
+                **metrics,
+                "id": candidate_id,
+                "config": candidate.model_dump(),
+                "flags": flags,
+            }
 
         for index, candidate in enumerate(candidates):
             result = evaluate_candidate(candidate, index)
@@ -304,7 +303,7 @@ def run_project(
                     best_candidate_bench,
                     config.run["benchmark"],
                     cwd=project_path,
-                    extra_context={**run_context, "warmups": 1, "repeats": 1},
+                    extra_context={**benchmark_context, "warmups": 1, "repeats": 1},
                 )
                 if "error" not in best_profile:
                     best_profile_path = _profile_artifact_path(run_root, best_candidate["id"])

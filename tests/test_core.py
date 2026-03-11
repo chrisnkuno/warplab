@@ -1,7 +1,10 @@
 import json
+import subprocess
+import sys
 import unittest
 import tempfile
 from pathlib import Path
+from unittest import mock
 
 
 class CoreTests(unittest.TestCase):
@@ -112,6 +115,37 @@ class CoreTests(unittest.TestCase):
             summary_path = write_json_summary(run_id, {"run_id": run_id}, tmp_path / "reports")
             self.assertTrue(summary_path.exists())
 
+    def test_benchmark_uses_explicit_budget_values(self):
+        from warplab.benchmark import run_benchmark
+        from warplab.execution import CommandResult
+
+        captured = {}
+
+        def fake_run_command(command, cwd, timeout_s=None):
+            captured["command"] = command
+            return CommandResult(
+                success=True,
+                command=command,
+                cwd=str(cwd),
+                returncode=0,
+                stdout='{"latency_ms": 1.0}\n{"latency_ms": 1.1}\n',
+                stderr="",
+                duration_s=0.01,
+            )
+
+        with mock.patch("warplab.benchmark.run_command", side_effect=fake_run_command):
+            run_benchmark(
+                Path("/tmp/fake-bench"),
+                "{artifact} --warmups {warmups} --repeats {repeats}",
+                warmup_runs=1,
+                timed_runs=2,
+                cwd=Path("/tmp"),
+                extra_context={"warmups": 99, "repeats": 99},
+            )
+
+        self.assertIn("--warmups 1", captured["command"])
+        self.assertIn("--repeats 2", captured["command"])
+
     def test_cloud_runtime_helpers(self):
         from warplab.cloud import (
             collect_runtime_diagnostics,
@@ -139,7 +173,7 @@ class CoreTests(unittest.TestCase):
         )
 
     def test_kaggle_env_loading(self):
-        from warplab.kaggle_api import load_dotenv
+        from warplab.kaggle_api import kaggle_credentials, load_dotenv, resolve_kaggle_username
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             env_path = Path(tmp_dir) / ".env"
@@ -148,6 +182,21 @@ class CoreTests(unittest.TestCase):
             self.assertEqual(values["KAGGLE_API_TOKEN"], "test-token")
             self.assertEqual(values["KAGGLE_USERNAME"], "test-user")
             self.assertEqual(values["KAGGLE_KEY"], "test-key")
+            credentials = kaggle_credentials(Path(tmp_dir))
+            self.assertEqual(credentials["api_token"], "test-token")
+            self.assertEqual(resolve_kaggle_username(Path(tmp_dir)), "test-user")
+
+    def test_kaggle_credentials_support_access_token_file(self):
+        from warplab.kaggle_api import kaggle_credentials
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            kaggle_dir = tmp_path / ".kaggle"
+            kaggle_dir.mkdir()
+            (kaggle_dir / "access_token").write_text("token-from-file\n")
+            with mock.patch("warplab.kaggle_api.Path.home", return_value=tmp_path):
+                credentials = kaggle_credentials(tmp_path)
+            self.assertEqual(credentials["api_token"], "token-from-file")
 
     def test_kaggle_kernel_package_generation(self):
         from warplab.kaggle_kernel import (
@@ -185,6 +234,19 @@ class CoreTests(unittest.TestCase):
             self.assertIn("projects/saxpy", combined_source)
             self.assertIn("uv', 'run', 'warplab'", combined_source)
             self.assertIn("summary['run_summary_path']", combined_source)
+
+    def test_cli_help_lists_subcommands(self):
+        result = subprocess.run(
+            [sys.executable, "-m", "warplab", "--help"],
+            cwd=Path(__file__).resolve().parents[1],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertIn("run", result.stdout)
+        self.assertIn("doctor", result.stdout)
+        self.assertIn("kaggle-doctor", result.stdout)
+        self.assertIn("kaggle-project-package", result.stdout)
 
 
 if __name__ == "__main__":
