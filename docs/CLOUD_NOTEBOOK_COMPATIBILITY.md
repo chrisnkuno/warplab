@@ -21,7 +21,7 @@ What the repo now provides:
 | Local CLI + `uv` | Verified in repo workflow | `uv run warplab ...` |
 | Docker + GPU host | Scaffolded | Dockerfile and docs provided |
 | Google Colab | Documented, not verified in CI | GPU/toolchain depends on runtime |
-| Kaggle Notebooks | Documented, not verified in CI | GPU/toolchain depends on runtime |
+| Kaggle Notebooks | Verified manually on March 11, 2026 | Tesla P100 runtime exposed `nvcc`, `ncu`, and `nvidia-smi` |
 
 ## Copy-Paste Bootstrap
 
@@ -79,9 +79,24 @@ The same runtime-check path can be used in:
 - remote SSH or port-forwarded Jupyter sessions
 - local shell via `uv run warplab doctor`
 
+## Verified Kaggle Runtime
+
+The Kaggle validation notebook was run successfully on March 11, 2026 with:
+
+- GPU: `Tesla P100-PCIE-16GB`
+- compute capability: `6.0`
+- CUDA: `12.5`
+- `nvcc`: available
+- `ncu`: available
+- `nvidia-smi`: available
+
+The follow-up step is a full sample-project run, documented in:
+
+- `docs/KAGGLE_SAXPY_WALKTHROUGH.md`
+
 ## What Still Needs Human Validation
 
 - a real Colab run from a clean session
-- a real Kaggle run from a clean session
-- confirmation of compiler availability in those sessions
+- repeated Kaggle runs for more than one sample project
+- confirmation that the full optimization loop is stable across notebook restarts
 - a short list of known workarounds when `nvcc` is not present

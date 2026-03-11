@@ -116,6 +116,8 @@ class CoreTests(unittest.TestCase):
         from warplab.cloud import (
             collect_runtime_diagnostics,
             notebook_bootstrap_snippet,
+            project_results_cell_snippet,
+            project_run_cell_snippet,
             runtime_warnings,
             validation_cell_snippet,
         )
@@ -128,6 +130,9 @@ class CoreTests(unittest.TestCase):
         self.assertIn("git clone", notebook_bootstrap_snippet("https://github.com/example/repo.git"))
         self.assertIn("collect_runtime_diagnostics", validation_cell_snippet())
         self.assertIn("sys.path.insert(0, str(ROOT_DIR))", validation_cell_snippet())
+        self.assertIn("uv', 'run', 'warplab'", project_run_cell_snippet())
+        self.assertIn("WarpLab stderr:", project_run_cell_snippet())
+        self.assertIn("plotly.express", project_results_cell_snippet())
         self.assertIn(
             "git', 'clone', '--depth', '1', 'https://github.com/example/repo.git'",
             validation_cell_snippet(repo_url="https://github.com/example/repo.git"),
@@ -148,6 +153,7 @@ class CoreTests(unittest.TestCase):
         from warplab.kaggle_kernel import (
             discover_repo_url,
             kaggle_kernel_metadata,
+            write_kaggle_project_package,
             write_kaggle_kernel_package,
         )
 
@@ -166,6 +172,19 @@ class CoreTests(unittest.TestCase):
         metadata = kaggle_kernel_metadata("user123", "warp-test", "Warp Test", "warp-test.ipynb")
         self.assertEqual(metadata["code_file"], "warp-test.ipynb")
         self.assertTrue(discover_repo_url())
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            package_dir = write_kaggle_project_package(
+                Path(tmp_dir),
+                project="projects/saxpy",
+                username="user123",
+                slug="warp-saxpy",
+            )
+            notebook = json.loads((package_dir / "warp-saxpy.ipynb").read_text())
+            combined_source = "".join("".join(cell["source"]) for cell in notebook["cells"])
+            self.assertIn("projects/saxpy", combined_source)
+            self.assertIn("uv', 'run', 'warplab'", combined_source)
+            self.assertIn("summary['run_summary_path']", combined_source)
 
 
 if __name__ == "__main__":

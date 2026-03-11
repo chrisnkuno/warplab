@@ -47,6 +47,32 @@ Notes:
 - CUDA compiler access may differ between platforms and over time.
 - treat the notebook as the frontend and the `warplab` package as the backend logic
 
+## Verified Kaggle Path
+
+Kaggle is now validated as a real WarpLab runtime for diagnostics and browser-based CUDA access.
+
+Verified runtime facts from March 11, 2026:
+
+- GPU: `Tesla P100-PCIE-16GB`
+- `nvcc`: available
+- `ncu`: available
+- `nvidia-smi`: available
+
+For a packaged `saxpy` run notebook, use:
+
+```bash
+uv run warplab kaggle-project-package \
+  --project projects/saxpy \
+  --output-dir build/kaggle-saxpy \
+  --title "WarpLab SAXPY Kaggle Run" \
+  --slug warplab-saxpy-kaggle-run \
+  --candidate-count 8
+```
+
+Then push it with the Kaggle CLI. See:
+
+- `docs/KAGGLE_SAXPY_WALKTHROUGH.md`
+
 ## What The Notebook Covers
 
 The notebook is intentionally organized around the research loop:

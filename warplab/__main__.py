@@ -7,7 +7,7 @@ from pathlib import Path
 
 from .cloud import collect_runtime_diagnostics, format_runtime_report
 from .kaggle_api import format_kaggle_doctor_report, kaggle_doctor
-from .kaggle_kernel import write_kaggle_kernel_package
+from .kaggle_kernel import write_kaggle_kernel_package, write_kaggle_project_package
 from .runner import run_project
 
 
@@ -45,6 +45,40 @@ def main() -> int:
             slug=args.slug,
             repo_dir=args.repo_dir,
             repo_url=args.repo_url,
+            is_private=not args.public,
+        )
+        print(json.dumps({"package_dir": str(path.resolve())}, indent=2))
+        return 0
+    if argv and argv[0] == "kaggle-project-package":
+        parser = argparse.ArgumentParser(description="Create a Kaggle kernel package that runs a WarpLab project.")
+        parser.add_argument("--output-dir", default="build/kaggle-project")
+        parser.add_argument("--project", default="projects/saxpy")
+        parser.add_argument("--username", default=None)
+        parser.add_argument("--title", default="WarpLab SAXPY Kaggle Run")
+        parser.add_argument("--slug", default=None)
+        parser.add_argument("--repo-dir", default="warplab")
+        parser.add_argument("--repo-url", default=None)
+        parser.add_argument("--candidate-count", type=int, default=8)
+        parser.add_argument("--no-profile", action="store_true")
+        parser.add_argument("--public", action="store_true")
+        args = parser.parse_args(argv[1:])
+
+        from .kaggle_api import kaggle_credentials
+
+        username = args.username or kaggle_credentials(Path.cwd()).get("username")
+        if not username:
+            raise SystemExit("KAGGLE_USERNAME is required for kaggle-project-package.")
+
+        path = write_kaggle_project_package(
+            Path(args.output_dir),
+            project=args.project,
+            username=username,
+            title=args.title,
+            slug=args.slug,
+            repo_dir=args.repo_dir,
+            repo_url=args.repo_url,
+            candidate_count=args.candidate_count,
+            profile=not args.no_profile,
             is_private=not args.public,
         )
         print(json.dumps({"package_dir": str(path.resolve())}, indent=2))

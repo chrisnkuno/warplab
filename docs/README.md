@@ -11,6 +11,7 @@ Start here:
 - `docs/NOTEBOOK_FIRST_ACCESSIBILITY.md`: the product model and why notebooks are the primary interface
 - `docs/NOTEBOOK_QUICKSTART.md`: Colab, Kaggle, local Jupyter, and repo-layout guidance
 - `docs/CLOUD_NOTEBOOK_COMPATIBILITY.md`: runtime checks, bootstrap commands, and current notebook-platform status
+- `docs/KAGGLE_SAXPY_WALKTHROUGH.md`: packaged Kaggle notebook flow for the `projects/saxpy` sample
 - `docs/DOCKER_AND_REMOTE_GPU.md`: container workflow for local GPUs and remote GPU hosts
 - `docs/PROJECT_SPEC.md`: `project.yaml` contract, placeholders, and executable output requirements
 - `docs/OPEN_SOURCE_GAPS_AND_NEXT_STEPS.md`: what is still missing for the notebook-first open-source vision

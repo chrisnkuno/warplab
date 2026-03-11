@@ -89,6 +89,110 @@ def validation_cell_snippet(repo_dir: str = "warplab", repo_url: str | None = No
     return "\n".join(lines)
 
 
+def project_run_cell_snippet(
+    project: str = "projects/saxpy",
+    repo_dir: str = "warplab",
+    candidate_count: int = 8,
+    profile: bool = True,
+) -> str:
+    args = [
+        "uv",
+        "run",
+        "warplab",
+        "str(PROJECT_PATH)",
+        "--root-dir",
+        "str(ROOT_DIR)",
+        "--candidate-count",
+        str(candidate_count),
+    ]
+    if not profile:
+        args.append("--no-profile")
+
+    rendered_args = ", ".join(
+        [f"'{item}'" if not item.startswith("str(") else item for item in args]
+    )
+    return "\n".join(
+        [
+            "import json, subprocess",
+            "from pathlib import Path",
+            "",
+            f"ROOT_DIR = Path('{repo_dir}').resolve()",
+            f"PROJECT_PATH = ROOT_DIR / '{project}'",
+            "if not PROJECT_PATH.exists():",
+            "    raise FileNotFoundError(f'Project path not found: {PROJECT_PATH}')",
+            "",
+            "command = [" + rendered_args + "]",
+            "try:",
+            "    result = subprocess.run(command, cwd=ROOT_DIR, check=True, capture_output=True, text=True)",
+            "except subprocess.CalledProcessError as exc:",
+            "    if exc.stdout:",
+            "        print('WarpLab stdout:')",
+            "        print(exc.stdout)",
+            "    if exc.stderr:",
+            "        print('WarpLab stderr:')",
+            "        print(exc.stderr)",
+            "    raise",
+            "print(result.stdout)",
+            "summary = json.loads(result.stdout)",
+            "summary_path = Path(summary['run_summary_path'])",
+            "report_path = summary.get('report_path')",
+            "print(json.dumps({",
+            "    'run_id': summary['run_id'],",
+            "    'project_name': summary['project_name'],",
+            "    'baseline_latency_ms': summary['baseline_latency_ms'],",
+            "    'best_candidate': summary.get('best_candidate', {}),",
+            "    'run_summary_path': str(summary_path),",
+            "    'report_path': report_path,",
+            "}, indent=2))",
+        ]
+    )
+
+
+def project_results_cell_snippet() -> str:
+    return "\n".join(
+        [
+            "import json",
+            "from pathlib import Path",
+            "",
+            "import pandas as pd",
+            "import plotly.express as px",
+            "from IPython.display import Markdown, display",
+            "",
+            "summary_payload = json.loads(summary_path.read_text())",
+            "rows = []",
+            "for item in summary_payload['results']:",
+            "    if not item.get('benchmark_success'):",
+            "        continue",
+            "    rows.append({",
+            "        'candidate_id': item['id'],",
+            "        'latency_ms': item['latency_ms'],",
+            "        'speedup': item['speedup'],",
+            "        'cv': item['cv'],",
+            "        'block_size': item['config']['params'].get('block_size'),",
+            "        'unroll': item['config']['params'].get('unroll'),",
+            "        'vector_width': item['config']['params'].get('vector_width'),",
+            "    })",
+            "",
+            "df = pd.DataFrame(rows).sort_values('speedup', ascending=False)",
+            "display(df)",
+            "if not df.empty:",
+            "    fig = px.scatter(",
+            "        df,",
+            "        x='latency_ms',",
+            "        y='speedup',",
+            "        color='vector_width',",
+            "        hover_data=['candidate_id', 'block_size', 'unroll', 'cv'],",
+            "        title='WarpLab SAXPY Candidates: Latency vs Speedup',",
+            "    )",
+            "    fig.show()",
+            "if summary.get('report_path'):",
+            "    report_text = Path(summary['report_path']).read_text()",
+            "    display(Markdown('## Generated Report'))",
+            "    display(Markdown(report_text))",
+        ]
+    )
+
+
 def format_runtime_report(diagnostics: dict[str, object]) -> str:
     warnings = runtime_warnings(diagnostics)
     payload = {"diagnostics": diagnostics, "warnings": warnings}
